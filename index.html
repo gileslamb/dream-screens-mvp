@@ -1,0 +1,1002 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DreamScreens — Memory Reconstruction</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500&family=IBM+Plex+Sans:wght@300;400&display=swap');
+
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --mono: 'IBM Plex Mono', monospace;
+    --sans: 'IBM Plex Sans', sans-serif;
+    --green: #00ff88;
+    --dim: #1a1a1a;
+    --muted: #444;
+    --text: #c8c8c0;
+    --accent: #ff3a2d;
+  }
+
+  html, body {
+    width: 100%; height: 100%;
+    background: #000;
+    color: var(--text);
+    font-family: var(--mono);
+    overflow: hidden;
+    cursor: none;
+  }
+
+  #cursor {
+    position: fixed;
+    left: 0; top: 0;
+    width: 8px; height: 8px;
+    background: var(--green);
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 9999;
+    will-change: transform;
+    mix-blend-mode: difference;
+  }
+
+  #gl {
+    position: fixed;
+    inset: 0;
+    width: 100%; height: 100%;
+    z-index: 1;
+    background: #020809;
+    image-rendering: pixelated;
+  }
+
+  .screen {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: flex-start;
+    padding: 10vh 10vw;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.8s ease;
+    z-index: 10;
+  }
+  .screen.active {
+    opacity: 1;
+    pointer-events: all;
+  }
+
+  /* ── STAGE 0: Particle organism intro ── */
+  #s0 {
+    background: transparent;
+    justify-content: space-between;
+    padding: 6vh 8vw;
+    z-index: 15;
+  }
+  #s0 .wordmark {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.4em;
+    color: #fff;
+    opacity: 0.7;
+  }
+  #s0 .body-copy {
+    position: absolute;
+    left: 50%;
+    bottom: 35%;
+    transform: translateX(-50%);
+    font-family: var(--sans);
+    font-size: 13px;
+    color: #fff;
+    opacity: 0.6;
+  }
+  #s0 .enter-btn {
+    position: absolute;
+    left: 50%;
+    bottom: 15%;
+    transform: translateX(-50%);
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    border: 2px solid rgba(255,255,255,0.6);
+    background: rgba(0,0,0,0.3);
+    color: #fff;
+    font-size: 14px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: border-color 0.2s, transform 0.2s, background 0.2s;
+  }
+  #s0 .enter-btn:hover {
+    border-color: rgba(255,255,255,0.9);
+    background: rgba(255,255,255,0.15);
+    transform: translateX(-50%) scale(1.05);
+  }
+  #s0 .session-id {
+    position: absolute;
+    bottom: 2vh;
+    right: 4vw;
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    color: var(--muted);
+    opacity: 0.4;
+  }
+
+  /* ── STAGE 1: System log / wave ── */
+  #s1 {
+    background: transparent;
+    justify-content: flex-end;
+    padding: 8vh 8vw;
+  }
+  #s1 .log {
+    font-size: clamp(10px, 1.1vw, 13px);
+    color: var(--green);
+    opacity: 0.8;
+    line-height: 1.8;
+    max-width: 55ch;
+  }
+  #s1 .log-line {
+    opacity: 0;
+    transform: translateX(-8px);
+    transition: opacity 0.4s ease, transform 0.4s ease;
+  }
+  #s1 .log-line.visible {
+    opacity: 1;
+    transform: none;
+  }
+  #s1 .log-line .ts { color: var(--muted); margin-right: 1em; }
+  #s1 .log-line .ok { color: var(--green); }
+  #s1 .log-line .warn { color: #ffcc44; }
+
+  /* ── STAGES 2,3,4: Memory fragments over video ── */
+  #s2, #s3, #s4 {
+    background: transparent;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+  }
+  #s2 .fragment, #s3 .fragment, #s4 .fragment {
+    max-width: 38ch;
+    opacity: 0;
+    transform: translateY(12px);
+    transition: opacity 1.2s ease, transform 1.2s ease;
+  }
+  #s2 .fragment.visible, #s3 .fragment.visible, #s4 .fragment.visible {
+    opacity: 1;
+    transform: none;
+  }
+  #s2 .fragment p, #s3 .fragment p, #s4 .fragment p {
+    font-family: var(--sans);
+    font-size: clamp(16px, 2.2vw, 26px);
+    font-weight: 300;
+    line-height: 1.5;
+    color: #fff;
+    letter-spacing: 0.01em;
+  }
+  #s2 .fragment .attr, #s3 .fragment .attr, #s4 .fragment .attr {
+    font-size: 11px;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-top: 2rem;
+  }
+
+  /* ── STAGE 5: Resolution organism + end card ── */
+  #s5 {
+    background: transparent;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+  }
+  #s5 .end-msg {
+    max-width: 40ch;
+  }
+  #s5 .end-msg .status,
+  #s5 .end-msg h2,
+  #s5 .end-msg .byline,
+  #s5 .end-msg .restart {
+    opacity: 0;
+  }
+  #s5 .end-msg.show .status {
+    animation: fadeIn 1s ease 0.5s forwards;
+  }
+  #s5 .end-msg.show h2 {
+    animation: fadeIn 1s ease 1.2s forwards;
+  }
+  #s5 .end-msg.show .byline {
+    animation: fadeIn 1s ease 2.5s forwards;
+  }
+  #s5 .end-msg.show .restart {
+    animation: fadeIn 1s ease 3.5s forwards;
+  }
+  #s5 .restart {
+    display: inline-block;
+    font-size: 11px;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: var(--text);
+    border-bottom: 1px solid var(--muted);
+    padding-bottom: 2px;
+    margin-top: 2rem;
+    cursor: pointer;
+    transition: color 0.2s;
+    background: none;
+    border: none;
+    font-family: var(--mono);
+  }
+  #s5 .restart:hover { color: var(--green); }
+
+  /* ── Progress indicator (7 dots) ── */
+  #progress {
+    position: fixed;
+    bottom: 4vh;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 6px;
+    z-index: 20;
+    opacity: 0;
+    transition: opacity 0.5s;
+  }
+  #progress.visible { opacity: 1; }
+  .dot {
+    width: 4px; height: 4px;
+    border-radius: 50%;
+    background: var(--muted);
+    transition: background 0.4s ease, transform 0.4s ease;
+  }
+  .dot.active {
+    background: var(--green);
+    transform: scale(1.4);
+  }
+
+  #next-prompt {
+    position: fixed;
+    bottom: 3vh;
+    left: 50%;
+    transform: translateX(-50%);
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.3em;
+    color: rgba(255,255,255,0.25);
+    opacity: 0;
+    transition: opacity 0.8s ease;
+    pointer-events: none;
+    z-index: 25;
+  }
+  #next-prompt.visible {
+    opacity: 1;
+  }
+
+  #scanlines {
+    position: fixed;
+    inset: 0;
+    background: repeating-linear-gradient(
+      to bottom,
+      transparent,
+      transparent 2px,
+      rgba(0,0,0,0.08) 2px,
+      rgba(0,0,0,0.08) 4px
+    );
+    pointer-events: none;
+    z-index: 50;
+    opacity: 0.4;
+  }
+
+  #noise {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 49;
+    opacity: 0.04;
+    mix-blend-mode: screen;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: none; }
+  }
+</style>
+</head>
+<body>
+
+<div id="cursor"></div>
+<div id="scanlines"></div>
+<canvas id="noise"></canvas>
+<canvas id="gl"></canvas>
+
+<div id="progress">
+  <div class="dot" id="d0"></div>
+  <div class="dot" id="d1"></div>
+  <div class="dot" id="d2"></div>
+  <div class="dot" id="d3"></div>
+  <div class="dot" id="d4"></div>
+  <div class="dot" id="d5"></div>
+  <div class="dot" id="d6"></div>
+</div>
+
+<div id="next-prompt">· next memory ·</div>
+
+<!-- STAGE 0: Particle organism intro -->
+<div class="screen active" id="s0">
+  <div class="wordmark">DREAMSCREENS</div>
+  <div class="body-copy">Neural memory reconstruction — v4.1</div>
+  <button class="enter-btn" onclick="onEnter()" aria-label="Enter">→</button>
+  <div class="session-id">Session ID: <span id="sessionId"></span></div>
+</div>
+
+<!-- STAGE 1: System log / wave -->
+<div class="screen" id="s1">
+  <div class="log" id="logContainer"></div>
+</div>
+
+<!-- STAGES 2,3,4: Memory fragments over video -->
+<div class="screen" id="s2">
+  <div class="fragment" id="fragment2">
+    <p id="fragmentText2"></p>
+    <div class="attr"></div>
+  </div>
+</div>
+<div class="screen" id="s3">
+  <div class="fragment" id="fragment3">
+    <p id="fragmentText3"></p>
+    <div class="attr"></div>
+  </div>
+</div>
+<div class="screen" id="s4">
+  <div class="fragment" id="fragment4">
+    <p id="fragmentText4"></p>
+    <div class="attr"></div>
+  </div>
+</div>
+
+<!-- STAGE 5: Resolution organism + end card -->
+<div class="screen" id="s5">
+  <div class="end-msg">
+    <div class="status">Reconstruction incomplete</div>
+    <h2>Memory fragment<br>archived.</h2>
+    <div class="byline">Dream Screens // The Feedback Loop</div>
+    <button class="restart" onclick="resetExperience()">Run again ↺</button>
+  </div>
+</div>
+
+<video id="vid1" style="display:none" loop muted playsinline crossorigin="anonymous"></video>
+<video id="vid2" style="display:none" loop muted playsinline crossorigin="anonymous"></video>
+<video id="vid3" style="display:none" loop muted playsinline crossorigin="anonymous"></video>
+
+<script>
+// ════════════════════════════════════════
+// CONFIG
+// ════════════════════════════════════════
+const CONFIG = {
+  // Set to your CDN URL when hosting media separately (e.g. 'https://your-bucket.r2.dev/')
+  mediaBaseUrl: '',
+  media(path) { return this.mediaBaseUrl + path; },
+  videos: {
+    vid1: { path: 'Media/Movies/White Matter 2.mp4', seek: 163.0 },
+    vid2: { path: 'Media/Movies/Shimmering Thirds.mp4', seek: 43.6 },
+    vid3: { path: 'Media/Movies/Movement TWO.mp4', seek: 221.2 }
+  },
+  music: {
+    intro: 'Media/mp3/Virta.mp3',
+    stage1: 'Media/mp3/Signal Dreams.mp3',
+    stage2: 'Media/mp3/Feedback Memory.(Minus 197).mp3',
+    stage3: 'Media/mp3/Nature module 1.mp3',
+    stage4: 'Media/mp3/Feedback Memory.(Minus 197).mp3',
+    stage5: 'Media/mp3/Brainwaves (grain Pysche).mp3'
+  },
+  timing: {
+    stage1Duration: 18000,
+    stage2Duration: 25000,
+    stage3Duration: 25000,
+    stage4Duration: 25000,
+    stage5OrgDuration: 8000,
+    transitionMs: 2500,
+    crossfadeMs: 30000
+  },
+  logLinePause: 550
+};
+
+// ════════════════════════════════════════
+// CURSOR
+// ════════════════════════════════════════
+const cursor = document.getElementById('cursor');
+document.addEventListener('mousemove', e => {
+  cursor.style.transform = 'translate(' + (e.clientX - 4) + 'px, ' + (e.clientY - 4) + 'px)';
+});
+
+// ════════════════════════════════════════
+// NOISE CANVAS
+// ════════════════════════════════════════
+(function noiseLoop() {
+  const c = document.getElementById('noise');
+  c.width = 256; c.height = 256;
+  const ctx = c.getContext('2d');
+  c.style.width = '100%'; c.style.height = '100%';
+  c.style.imageRendering = 'pixelated';
+  function drawNoise() {
+    const img = ctx.createImageData(256, 256);
+    for (let i = 0; i < img.data.length; i += 4) {
+      const v = Math.random() * 255 | 0;
+      img.data[i] = img.data[i+1] = img.data[i+2] = v;
+      img.data[i+3] = 255;
+    }
+    ctx.putImageData(img, 0, 0);
+    requestAnimationFrame(drawNoise);
+  }
+  drawNoise();
+})();
+
+// ════════════════════════════════════════
+// WEBGL
+// ════════════════════════════════════════
+const glCanvas = document.getElementById('gl');
+const gl = glCanvas.getContext('webgl') || glCanvas.getContext('webgl2');
+
+function resize() {
+  glCanvas.width = Math.floor(window.innerWidth * 0.75);
+  glCanvas.height = Math.floor(window.innerHeight * 0.75);
+  glCanvas.style.width = '100%';
+  glCanvas.style.height = '100%';
+  if (gl) gl.viewport(0, 0, glCanvas.width, glCanvas.height);
+}
+window.addEventListener('resize', resize);
+resize();
+
+const VS = `attribute vec2 a_pos; void main() { gl_Position = vec4(a_pos, 0.0, 1.0); }`;
+
+const FS = `
+precision highp float;
+uniform float u_t;
+uniform vec2 u_res;
+uniform float u_stage;
+uniform float u_blend;
+uniform float u_orgOpacity;
+uniform float u_orgGhost;
+uniform sampler2D u_vid1;
+uniform sampler2D u_vid2;
+uniform sampler2D u_vid3;
+
+#define N 150.0
+#define GOLDEN 2.399963
+
+float hash(vec2 p) {
+  p = fract(p * vec2(234.34, 435.345));
+  p += dot(p, p + 34.23);
+  return fract(p.x * p.y);
+}
+float noise(vec2 p) {
+  vec2 i = floor(p);
+  vec2 f = fract(p);
+  f = f * f * (3.0 - 2.0 * f);
+  return mix(
+    mix(hash(i), hash(i + vec2(1,0)), f.x),
+    mix(hash(i + vec2(0,1)), hash(i + vec2(1,1)), f.x), f.y);
+}
+float fbm(vec2 p) {
+  float v = 0.0, amp = 0.5, freq = 1.0;
+  for (int i = 0; i < 5; i++) {
+    v += noise(p * freq) * amp;
+    freq *= 2.0; amp *= 0.5;
+  }
+  return v;
+}
+
+vec3 organismColor(bool warm) {
+  return warm ? vec3(1.0, 0.75, 0.4) : vec3(0.9, 0.85, 0.7);
+}
+
+void main() {
+  vec2 uv = gl_FragCoord.xy / u_res;
+  vec2 ndc = uv * 2.0 - 1.0;
+  ndc.x *= u_res.x / u_res.y;
+  vec3 col = vec3(0.01, 0.04, 0.05);
+
+  bool isOrg0 = u_stage < 0.5;
+  bool isOrg5 = u_stage > 4.5;
+  bool showOrg = (isOrg0 || isOrg5) && u_orgOpacity > 0.001;
+
+  if (showOrg) {
+    float rotY = u_t * 0.314; // ~20s period
+    float amp = isOrg5 ? 0.38 + 0.08 * sin(u_t * 0.4) : 0.35 + 0.08 * sin(u_t * 0.4);
+    float scale = 0.6 + 0.03 * sin(u_t * 0.25);
+    if (isOrg5) rotY *= 0.5;
+
+    for (float i = 0.0; i < N; i += 1.0) {
+      float theta = i * GOLDEN;
+      float phi = acos(1.0 - 2.0 * (i + 0.5) / N);
+      vec3 pos = vec3(sin(phi) * cos(theta), sin(phi) * sin(theta), cos(phi));
+      pos += fbm(pos.xy * 3.0 + u_t * 0.2) * amp * vec3(1,1,1);
+      float c = cos(rotY), s = sin(rotY);
+      pos.xz = vec2(pos.x * c - pos.z * s, pos.x * s + pos.z * c);
+      pos *= scale;
+      vec2 proj = pos.xy / (1.0 - pos.z * 0.3);
+      proj.x /= u_res.x / u_res.y;
+      float d = length(ndc - proj);
+      col += organismColor(isOrg5) * 0.0006 * u_orgOpacity / (d * d + 0.0005);
+    }
+    float bokeh = hash(uv * 100.0 + u_t) * hash(uv * 77.0);
+    col += vec3(0.9, 0.85, 0.7) * 0.001 * step(0.98, bokeh) * u_orgOpacity;
+  }
+
+  if (u_stage >= 1.0 && u_stage < 2.0) {
+    float n = fbm(uv * 3.0 + u_t * 0.15);
+    vec3 rawNoise = vec3(n * 0.3, n * 0.35, n * 0.28);
+    float wave = sin(uv.x * 6.28 + u_t * 0.8) * 0.03 + sin(uv.x * 3.14 + u_t * 0.4) * 0.015;
+    float d = abs(uv.y - 0.5 - wave);
+    float c = smoothstep(0.004, 0.001, d);
+    vec3 cableCol = vec3(0.6, 0.9, 0.65) * c * 0.7;
+    col = mix(col, rawNoise + cableCol, 1.0 - u_orgOpacity);
+  }
+
+  if (u_stage >= 2.0) {
+    float glitchAmount = u_blend * (1.0 - u_blend) * 4.0;
+    float glitchSeed = hash(vec2(floor(uv.y * 80.0), floor(u_t * 8.0)));
+    float glitchLine = step(1.0 - glitchAmount * 0.3, glitchSeed);
+    vec2 glitchUV = uv + vec2(glitchLine * (hash(vec2(uv.y, u_t)) - 0.5) * 0.06, 0.0);
+    float drift = glitchAmount * 0.012;
+    vec3 v1 = texture2D(u_vid1, glitchUV).rgb;
+    vec3 v2 = texture2D(u_vid2, glitchUV).rgb;
+    vec3 v3 = texture2D(u_vid3, glitchUV).rgb;
+    float r1 = texture2D(u_vid1, glitchUV + vec2(drift, 0.0)).r;
+    float g1 = texture2D(u_vid1, glitchUV).g;
+    float b1 = texture2D(u_vid1, glitchUV - vec2(drift, 0.0)).b;
+    vec3 v1Chroma = vec3(r1, g1, b1);
+    float r2 = texture2D(u_vid2, glitchUV + vec2(drift, 0.0)).r;
+    float g2 = texture2D(u_vid2, glitchUV).g;
+    float b2 = texture2D(u_vid2, glitchUV - vec2(drift, 0.0)).b;
+    vec3 v2Chroma = vec3(r2, g2, b2);
+    float r3 = texture2D(u_vid3, glitchUV + vec2(drift, 0.0)).r;
+    float g3 = texture2D(u_vid3, glitchUV).g;
+    float b3 = texture2D(u_vid3, glitchUV - vec2(drift, 0.0)).b;
+    vec3 v3Chroma = vec3(r3, g3, b3);
+    v1 = mix(v1, v1Chroma, glitchAmount * 0.7);
+    v2 = mix(v2, v2Chroma, glitchAmount * 0.7);
+    v3 = mix(v3, v3Chroma, glitchAmount * 0.7);
+    float lum1 = dot(v1, vec3(0.299, 0.587, 0.114));
+    float lum2 = dot(v2, vec3(0.299, 0.587, 0.114));
+    float lum3 = dot(v3, vec3(0.299, 0.587, 0.114));
+    v1 = mix(v1, vec3(lum1), 0.4);
+    v2 = mix(v2, vec3(lum2), 0.4);
+    v3 = mix(v3, vec3(lum3), 0.4);
+    vec3 vidCol = v1;
+    if (u_stage >= 3.0 && u_stage < 4.0) vidCol = mix(v1, v2, u_blend);
+    else if (u_stage >= 4.0) vidCol = mix(v2, v3, u_blend);
+    float n = fbm(uv * 3.0 + u_t * 0.15);
+    vec3 rawNoise = vec3(n * 0.3, n * 0.35, n * 0.28);
+    float rev = u_blend;
+    float thr = mix(1.5, -0.2, rev);
+    float lum = dot(vidCol, vec3(0.299, 0.587, 0.114));
+    float mask = smoothstep(thr - 0.3, thr + 0.3, n + lum * 0.4);
+    vidCol = mix(rawNoise, vidCol + rawNoise * 0.3, mask);
+    col = mix(col, vidCol, 1.0 - u_orgOpacity);
+  }
+
+  if (u_orgGhost > 0.001) {
+    float rotY = u_t * 0.314;
+    float amp = 0.35 + 0.08 * sin(u_t * 0.4);
+    float scale = 0.6 + 0.03 * sin(u_t * 0.25);
+    vec3 orgCol = vec3(0.0);
+    for (float i = 0.0; i < N; i += 1.0) {
+      float theta = i * GOLDEN;
+      float phi = acos(1.0 - 2.0 * (i + 0.5) / N);
+      vec3 pos = vec3(sin(phi) * cos(theta), sin(phi) * sin(theta), cos(phi));
+      pos += fbm(pos.xy * 3.0 + u_t * 0.2) * amp * vec3(1,1,1);
+      float c = cos(rotY), s = sin(rotY);
+      pos.xz = vec2(pos.x * c - pos.z * s, pos.x * s + pos.z * c);
+      pos *= scale;
+      vec2 proj = pos.xy / (1.0 - pos.z * 0.3);
+      proj.x /= u_res.x / u_res.y;
+      float d = length(ndc - proj);
+      orgCol += organismColor(false) * 0.0006 / (d * d + 0.0005);
+    }
+    col += orgCol * u_orgGhost;
+  }
+
+  float dist = length(uv - vec2(0.5));
+  col *= clamp(1.0 - dist * 1.2, 0.0, 1.0);
+  gl_FragColor = vec4(col, 1.0);
+}
+`;
+
+function compileShader(type, src) {
+  const s = gl.createShader(type);
+  gl.shaderSource(s, src);
+  gl.compileShader(s);
+  return s;
+}
+const prog = gl.createProgram();
+gl.attachShader(prog, compileShader(gl.VERTEX_SHADER, VS));
+gl.attachShader(prog, compileShader(gl.FRAGMENT_SHADER, FS));
+gl.linkProgram(prog);
+gl.useProgram(prog);
+
+const buf = gl.createBuffer();
+gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1, 1,-1, -1,1, 1,1]), gl.STATIC_DRAW);
+const aPos = gl.getAttribLocation(prog, 'a_pos');
+gl.enableVertexAttribArray(aPos);
+gl.vertexAttribPointer(aPos, 2, gl.FLOAT, false, 0, 0);
+
+const uT = gl.getUniformLocation(prog, 'u_t');
+const uRes = gl.getUniformLocation(prog, 'u_res');
+const uStage = gl.getUniformLocation(prog, 'u_stage');
+const uBlend = gl.getUniformLocation(prog, 'u_blend');
+const uOrgOpacity = gl.getUniformLocation(prog, 'u_orgOpacity');
+const uOrgGhost = gl.getUniformLocation(prog, 'u_orgGhost');
+const uVid1 = gl.getUniformLocation(prog, 'u_vid1');
+const uVid2 = gl.getUniformLocation(prog, 'u_vid2');
+const uVid3 = gl.getUniformLocation(prog, 'u_vid3');
+
+function createVideoTexture() {
+  const tex = gl.createTexture();
+  gl.bindTexture(gl.TEXTURE_2D, tex);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+  return tex;
+}
+const tex1 = createVideoTexture();
+const tex2 = createVideoTexture();
+const tex3 = createVideoTexture();
+
+const vid1 = document.getElementById('vid1');
+const vid2 = document.getElementById('vid2');
+const vid3 = document.getElementById('vid3');
+vid1.src = CONFIG.media(CONFIG.videos.vid1.path);
+vid2.src = CONFIG.media(CONFIG.videos.vid2.path);
+vid3.src = CONFIG.media(CONFIG.videos.vid3.path);
+
+let videosReady = 0;
+function onVideoReady() {
+  videosReady++;
+  if (videosReady === 3) {
+    vid1.currentTime = CONFIG.videos.vid1.seek;
+    vid2.currentTime = CONFIG.videos.vid2.seek;
+    vid3.currentTime = CONFIG.videos.vid3.seek;
+    vid1.play().catch(()=>{});
+    vid2.play().catch(()=>{});
+    vid3.play().catch(()=>{});
+  }
+}
+vid1.addEventListener('canplaythrough', onVideoReady, { once: true });
+vid2.addEventListener('canplaythrough', onVideoReady, { once: true });
+vid3.addEventListener('canplaythrough', onVideoReady, { once: true });
+
+let startTime = Date.now();
+let lastLog = -1;
+let glStage = 0.0, glStageTarget = 0.0;
+let glBlend = 0.0, glBlendTarget = 0.0;
+let glOrgOpacity = 1.0, glOrgOpacityTarget = 1.0;
+let glOrgGhost = 0.0;
+
+function renderGL() {
+  gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+  const t = (Date.now() - startTime) / 1000;
+  const ti = Math.floor(t);
+  if (ti % 5 === 0 && ti !== lastLog) {
+    console.log('stage:', glStage.toFixed(2), 'blend:', glBlend.toFixed(2), 'orgOpacity:', glOrgOpacity.toFixed(2), 't:', t.toFixed(1));
+    lastLog = ti;
+  }
+  glStage += (glStageTarget - glStage) * 0.002;
+  glBlend += (glBlendTarget - glBlend) * 0.003;
+  glOrgOpacity += (glOrgOpacityTarget - glOrgOpacity) * 0.002;
+
+  gl.uniform1f(uT, t);
+  gl.uniform2f(uRes, glCanvas.width, glCanvas.height);
+  gl.uniform1f(uStage, glStage);
+  gl.uniform1f(uBlend, glBlend);
+  gl.uniform1f(uOrgOpacity, glOrgOpacity);
+  gl.uniform1f(uOrgGhost, glOrgGhost);
+
+  if (glStage >= 2.0) {
+    if (glStage < 3.0 && vid1.readyState >= 2) {
+      gl.activeTexture(gl.TEXTURE0);
+      gl.bindTexture(gl.TEXTURE_2D, tex1);
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, vid1);
+    } else if (glStage < 4.0 && vid1.readyState >= 2 && vid2.readyState >= 2) {
+      gl.activeTexture(gl.TEXTURE0);
+      gl.bindTexture(gl.TEXTURE_2D, tex1);
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, vid1);
+      gl.activeTexture(gl.TEXTURE1);
+      gl.bindTexture(gl.TEXTURE_2D, tex2);
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, vid2);
+    } else if (glStage >= 4.0 && vid2.readyState >= 2 && vid3.readyState >= 2) {
+      gl.activeTexture(gl.TEXTURE1);
+      gl.bindTexture(gl.TEXTURE_2D, tex2);
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, vid2);
+      gl.activeTexture(gl.TEXTURE2);
+      gl.bindTexture(gl.TEXTURE_2D, tex3);
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, vid3);
+    }
+  }
+  gl.uniform1i(uVid1, 0);
+  gl.uniform1i(uVid2, 1);
+  gl.uniform1i(uVid3, 2);
+
+  gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+  requestAnimationFrame(renderGL);
+}
+renderGL();
+
+// ════════════════════════════════════════
+// AUDIO
+// ════════════════════════════════════════
+const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+let currentGain = null;
+let currentBuffer = null;
+
+async function playTrack(path) {
+  try {
+    if (audioCtx.state === 'suspended') await audioCtx.resume();
+    const res = await fetch(path);
+    const buf = await audioCtx.decodeAudioData(await res.arrayBuffer());
+    const src = audioCtx.createBufferSource();
+    src.buffer = buf;
+    src.loop = true;
+    const gain = audioCtx.createGain();
+    const now = audioCtx.currentTime;
+    gain.gain.setValueAtTime(0, now);
+    src.connect(gain);
+    gain.connect(audioCtx.destination);
+    src.start(0);
+    if (currentGain) {
+      currentGain.gain.setTargetAtTime(0, now, 10.0);
+      gain.gain.setTargetAtTime(0.75, now, 10.0);
+      const oldSrc = currentBuffer;
+      setTimeout(() => { try { if (oldSrc) oldSrc.stop(); } catch(e){} }, 45000);
+    } else {
+      gain.gain.setTargetAtTime(0.75, now, 10.0);
+    }
+    currentGain = gain;
+    currentBuffer = src;
+  } catch (e) { console.warn('Audio load failed:', path, e); }
+}
+
+function stopAudio() {
+  if (currentGain) {
+    currentGain.gain.setTargetAtTime(0, audioCtx.currentTime, 10.0);
+    const s = currentBuffer;
+    setTimeout(() => {
+      try { if (s) s.stop(); } catch(e){}
+      currentGain = null;
+      currentBuffer = null;
+    }, 45000);
+  }
+}
+
+function staticBurst(dur) {
+  const bufSize = audioCtx.sampleRate * (dur / 1000);
+  const b = audioCtx.createBuffer(1, bufSize, audioCtx.sampleRate);
+  const d = b.getChannelData(0);
+  for (let i = 0; i < bufSize; i++) d[i] = (Math.random() * 2 - 1) * 0.3;
+  const src = audioCtx.createBufferSource();
+  src.buffer = b;
+  const gain = audioCtx.createGain();
+  gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+  gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + dur / 1000);
+  src.connect(gain);
+  gain.connect(audioCtx.destination);
+  src.start(0);
+}
+
+function beep(freq, dur) {
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+  osc.frequency.value = freq;
+  osc.type = 'square';
+  gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+  gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + dur / 1000);
+  osc.connect(gain);
+  gain.connect(audioCtx.destination);
+  osc.start(0);
+  osc.stop(audioCtx.currentTime + dur / 1000);
+}
+
+let virtaStarted = false;
+function startVirta() {
+  if (virtaStarted) return;
+  virtaStarted = true;
+  playTrack(CONFIG.media(CONFIG.music.intro));
+}
+document.addEventListener('mousemove', startVirta, { once: true });
+
+function pulseOrganism() {
+  if (currentStage < 2 || currentStage > 4) return;
+  let t = 0;
+  const interval = setInterval(() => {
+    t += 0.05;
+    glOrgGhost = Math.sin(t * Math.PI) * 0.2;
+    if (t >= 1.0) {
+      glOrgGhost = 0;
+      clearInterval(interval);
+    }
+  }, 50);
+}
+setInterval(pulseOrganism, 18000);
+
+document.getElementById('sessionId').textContent =
+  'DS-' + Math.random().toString(36).substring(2,7).toUpperCase();
+
+// ════════════════════════════════════════
+// STAGE MANAGEMENT
+// ════════════════════════════════════════
+const screens = ['s0','s1','s2','s3','s4','s5'];
+const dots = ['d0','d1','d2','d3','d4','d5','d6'];
+let stageTimer = null;
+
+let currentStage = 0;
+function showStage(n) {
+  currentStage = n;
+  screens.forEach((id, i) => {
+    document.getElementById(id).classList.toggle('active', i === n);
+  });
+  dots.forEach((id, i) => {
+    document.getElementById(id).classList.toggle('active', i === n);
+  });
+}
+
+const LOG_LINES = [
+  { ts:'00:00:01', cls:'', text:'Initialising neural bridge...' },
+  { ts:'00:00:02', cls:'ok', text:'[OK] EEG sync established — 64 channels active' },
+  { ts:'00:00:04', cls:'', text:'Loading diffusion model weights...' },
+  { ts:'00:00:06', cls:'ok', text:'[OK] Model loaded — 1.4B parameters' },
+  { ts:'00:00:08', cls:'', text:'Scanning REM archive — subject GHL-7704' },
+  { ts:'00:00:11', cls:'warn', text:'[WARN] Memory trace degraded — confidence: 61%' },
+  { ts:'00:00:13', cls:'', text:'Attempting reconstruction from partial signal...' },
+  { ts:'00:00:16', cls:'ok', text:'[OK] Fragment recovered — rendering...' },
+];
+
+function runLogLines(callback) {
+  const container = document.getElementById('logContainer');
+  container.innerHTML = '';
+  const pause = CONFIG.logLinePause;
+  LOG_LINES.forEach((line, i) => {
+    const el = document.createElement('div');
+    el.className = 'log-line';
+    el.innerHTML = `<span class="ts">[${line.ts}]</span><span class="${line.cls}">${line.text}</span>`;
+    container.appendChild(el);
+    setTimeout(() => {
+      el.classList.add('visible');
+      if (line.cls === 'ok' || line.cls === 'warn') beep(880, 30);
+      if (i === LOG_LINES.length - 1 && callback) setTimeout(callback, 800);
+    }, i * pause);
+  });
+}
+
+const FRAGS = [
+  { text: 'The train moved and she was watching the cables. The way they rose and fell like breathing. He didn\'t want to look away.', attr: 'Memory fragment · REM cycle 3 · confidence: 61%' },
+  { text: 'Not a playlist. Not a video. An experience that reshapes itself to fit the version of you that\'s watching it.', attr: 'Source: archived transmission · DreamScreens internal' },
+  { text: 'The glitch isn\'t a failure. It\'s the invitation.', attr: 'Fragment 7 · partially recovered' },
+];
+
+function showFrag(stageNum, idx) {
+  const f = FRAGS[idx % FRAGS.length];
+  const fragId = stageNum === 2 ? 'fragment2' : stageNum === 3 ? 'fragment3' : 'fragment4';
+  const el = document.getElementById(fragId);
+  el.querySelector('p').textContent = f.text;
+  el.querySelector('.attr').textContent = f.attr;
+  el.classList.remove('visible');
+  void el.offsetHeight;
+  setTimeout(() => el.classList.add('visible'), 50);
+}
+
+let videoStageFallbackTimer = null;
+
+function enterVideoStage(stageNum, onAdvance) {
+  if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+  if (videoStageFallbackTimer) clearTimeout(videoStageFallbackTimer);
+  const nextPrompt = document.getElementById('next-prompt');
+  nextPrompt.classList.remove('visible');
+  const advance = () => {
+    if (videoStageFallbackTimer) clearTimeout(videoStageFallbackTimer);
+    videoStageFallbackTimer = null;
+    nextPrompt.classList.remove('visible');
+    document.removeEventListener('click', advanceOnClick);
+    onAdvance();
+  };
+  const advanceOnClick = () => advance();
+  document.addEventListener('click', advanceOnClick, { once: true });
+  setTimeout(() => nextPrompt.classList.add('visible'), 15000);
+  videoStageFallbackTimer = setTimeout(advance, 45000);
+}
+
+function onEnter() {
+  if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+  glOrgOpacityTarget = 0.0;
+  document.getElementById('s0').classList.remove('active');
+  stageTimer = setTimeout(() => {
+    glStageTarget = 1.0;
+    glOrgOpacityTarget = 0.0;
+    showStage(1);
+    document.getElementById('progress').classList.add('visible');
+    playTrack(CONFIG.media(CONFIG.music.stage1));
+    runLogLines(() => {
+      const holdAfterLogs = CONFIG.timing.stage1Duration - LOG_LINES.length * CONFIG.logLinePause - 800;
+      stageTimer = setTimeout(() => {
+        staticBurst(200);
+        glStageTarget = 2.0;
+        glBlend = 0.0;
+        glBlendTarget = 1.0;
+        showStage(2);
+        playTrack(CONFIG.media(CONFIG.music.stage2));
+        showFrag(2, 0);
+        const dwell = 5000;
+        for (let i = 1; i <= 5; i++) setTimeout(() => showFrag(2, i), dwell * i);
+        enterVideoStage(2, () => {
+          glBlendTarget = 1.0;
+          stageTimer = setTimeout(() => {
+            staticBurst(200);
+            glStageTarget = 3.0;
+            glBlend = 0.0;
+            glBlendTarget = 1.0;
+            showStage(3);
+            playTrack(CONFIG.media(CONFIG.music.stage3));
+            showFrag(3, 0);
+            for (let i = 1; i <= 5; i++) setTimeout(() => showFrag(3, i), dwell * i);
+            enterVideoStage(3, () => {
+              glBlendTarget = 1.0;
+              stageTimer = setTimeout(() => {
+                staticBurst(200);
+                glStageTarget = 4.0;
+                glBlend = 0.0;
+                glBlendTarget = 1.0;
+                showStage(4);
+                playTrack(CONFIG.media(CONFIG.music.stage4));
+                showFrag(4, 0);
+                for (let i = 1; i <= 5; i++) setTimeout(() => showFrag(4, i), dwell * i);
+                enterVideoStage(4, () => {
+                  glBlendTarget = 1.0;
+                  stageTimer = setTimeout(() => {
+                    staticBurst(200);
+                    glStageTarget = 5.0;
+                    glOrgOpacityTarget = 1.0;
+                    showStage(5);
+                    playTrack(CONFIG.media(CONFIG.music.stage5));
+                    stageTimer = setTimeout(() => {
+                      document.getElementById('s5').querySelector('.end-msg').classList.add('show');
+                      stageTimer = setTimeout(() => stopAudio(), 5000);
+                    }, CONFIG.timing.stage5OrgDuration);
+                  }, CONFIG.timing.transitionMs);
+                });
+              }, CONFIG.timing.transitionMs);
+            });
+          }, CONFIG.timing.transitionMs);
+        });
+      }, holdAfterLogs);
+    });
+  }, 1500);
+}
+
+function resetExperience() {
+  clearTimeout(stageTimer);
+  if (videoStageFallbackTimer) clearTimeout(videoStageFallbackTimer);
+  videoStageFallbackTimer = null;
+  document.getElementById('next-prompt').classList.remove('visible');
+  stopAudio();
+  virtaStarted = false;
+  vid1.pause(); vid1.currentTime = CONFIG.videos.vid1.seek;
+  vid2.pause(); vid2.currentTime = CONFIG.videos.vid2.seek;
+  vid3.pause(); vid3.currentTime = CONFIG.videos.vid3.seek;
+  glStageTarget = 0.0;
+  glStage = 0.0;
+  glBlendTarget = 0.0;
+  glBlend = 0.0;
+  glOrgOpacityTarget = 1.0;
+  glOrgOpacity = 1.0;
+  glOrgGhost = 0.0;
+  document.getElementById('progress').classList.remove('visible');
+  ['s1','s2','s3','s4','s5'].forEach(id => document.getElementById(id).classList.remove('active'));
+  document.getElementById('s0').classList.add('active');
+  document.getElementById('logContainer').innerHTML = '';
+  document.getElementById('s5').querySelector('.end-msg').classList.remove('show');
+  document.getElementById('sessionId').textContent =
+    'DS-' + Math.random().toString(36).substring(2,7).toUpperCase();
+  showStage(0);
+}
+</script>
+</body>
+</html>
