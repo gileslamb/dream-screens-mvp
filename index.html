@@ -228,89 +228,95 @@
   }
   #s5 .restart:hover { color: var(--green); }
 
-  /* ── STAGE 6: Coming Soon / Archive ── */
+  /* ── STAGE 6: Archive overlay (on top of organism) ── */
   #s6 {
-    background: #000;
+    background: linear-gradient(to bottom, transparent 0%, rgba(0,0,0,0.7) 100%);
     flex-direction: column;
-    justify-content: flex-start;
+    justify-content: center;
     align-items: center;
     padding: 0;
+    z-index: 20;
+    pointer-events: none;
   }
   #s6 .archive-header {
     font-family: var(--mono);
-    font-size: 10px;
-    letter-spacing: 0.4em;
+    font-size: 9px;
+    letter-spacing: 0.5em;
     color: #fff;
-    opacity: 0.3;
-    margin-top: 15vh;
+    opacity: 0;
+    transition: opacity 1s ease;
+    margin-bottom: 4vh;
     text-align: center;
   }
+  #s6 .archive-header.visible {
+    opacity: 0.25;
+  }
   #s6 .archive-list {
-    margin-top: 8vh;
     text-align: center;
   }
   #s6 .archive-line {
     font-family: var(--mono);
-    font-size: 12px;
-    line-height: 2.2;
+    font-size: 11px;
+    line-height: 2.4;
+    text-align: center;
     opacity: 0;
-    transform: translateY(6px);
-    transition: opacity 0.6s ease, transform 0.6s ease;
+    transform: translateY(5px);
+    transition: opacity 0.5s ease, transform 0.5s ease;
   }
   #s6 .archive-line.visible {
     opacity: 1;
     transform: none;
   }
   #s6 .archive-line .idx {
-    opacity: 0.2;
+    opacity: 0.15;
     color: #fff;
   }
   #s6 .archive-line.available .title {
-    opacity: 0.7;
+    opacity: 0.75;
     color: #fff;
   }
-  #s6 .archive-line.coming-soon .title {
+  #s6 .archive-line.soon .title {
     opacity: 0.2;
     color: #fff;
   }
   #s6 .archive-line .status {
-    font-size: 10px;
-    letter-spacing: 0.2em;
-    opacity: 0.2;
+    font-size: 9px;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
   }
   #s6 .archive-line.available .status {
     color: #00ff88;
-    opacity: 0.4;
+    opacity: 0.5;
   }
-  #s6 .archive-line.coming-soon .status {
+  #s6 .archive-line.soon .status {
     color: #fff;
-    opacity: 0.15;
+    opacity: 0.12;
   }
   #s6 .archive-tagline {
     font-family: var(--sans);
-    font-size: 13px;
+    font-size: 12px;
     font-style: italic;
     color: #fff;
     opacity: 0;
     transition: opacity 0.8s ease;
-    margin-top: 6vh;
+    margin-top: 4vh;
     text-align: center;
   }
   #s6 .archive-tagline.visible {
-    opacity: 0.25;
+    opacity: 0.2;
   }
   #s6 .archive-byline {
     font-family: var(--mono);
-    font-size: 10px;
-    letter-spacing: 0.3em;
+    font-size: 9px;
+    letter-spacing: 0.4em;
     color: #fff;
     opacity: 0;
     transition: opacity 0.8s ease;
-    margin-top: 2rem;
+    margin-top: 1rem;
     text-align: center;
   }
   #s6 .archive-byline.visible {
-    opacity: 0.15;
+    opacity: 0.12;
   }
 
   /* ── Progress indicator (7 dots) ── */
@@ -449,10 +455,10 @@
 
 <!-- STAGE 6: Coming Soon / Archive -->
 <div class="screen" id="s6">
-  <div class="archive-header">DREAM SCREENS — ARCHIVE</div>
+  <div class="archive-header" id="archive-header">DREAM SCREENS — ARCHIVE</div>
   <div class="archive-list" id="archiveList"></div>
-  <div class="archive-tagline" id="archiveTagline">Each archive is an immersive journey.</div>
-  <div class="archive-byline" id="archiveByline">dreamscreens.io — 2026</div>
+  <div class="archive-tagline" id="archiveTagline">Each archive is an immersive journey through a subliminal narrative.</div>
+  <div class="archive-byline" id="archiveByline">dreamscreens.io</div>
 </div>
 
 <video id="vid1" style="display:none" loop muted playsinline crossorigin="anonymous"></video>
@@ -467,18 +473,19 @@ const CONFIG = {
   // Set to your CDN URL when hosting media separately (e.g. 'https://your-bucket.r2.dev/')
   mediaBaseUrl: '',
   media(path) { return this.mediaBaseUrl + path; },
-  videos: {
-    vid1: { path: 'Media/Movies/White Matter 2.mp4', seek: 163.0 },
-    vid2: { path: 'Media/Movies/Shimmering Thirds.mp4', seek: 43.6 },
-    vid3: { path: 'Media/Movies/Movement TWO.mp4', seek: 221.2 }
-  },
+  videos: [
+    'Media/Movies/White Matter 2.mp4',
+    'Media/Movies/Shimmering Thirds.mp4',
+    'Media/Movies/Movement TWO.mp4'
+  ],
+  videoSeek: 30,
   music: {
     intro: 'Media/mp3/Virta.mp3',
     stage1: 'Media/mp3/Signal Dreams.mp3',
     stage2: 'Media/mp3/Feedback Memory.(Minus 197).mp3',
     stage3: 'Media/mp3/Nature module 1.mp3',
     stage4: 'Media/mp3/Brainwaves (grain Pysche).mp3',
-    stage5: 'Media/mp3/The Dream Architect.mp3'
+    stage5: 'Media/mp3/Module n5 v2.mp3'
   },
   timing: {
     stage1Duration: 18000,
@@ -548,6 +555,7 @@ uniform float u_stage;
 uniform float u_blend;
 uniform float u_orgOpacity;
 uniform float u_orgGhost;
+uniform float u_archiveMode;
 uniform sampler2D u_vid1;
 uniform sampler2D u_vid2;
 uniform sampler2D u_vid3;
@@ -591,11 +599,21 @@ void main() {
   bool isOrg5 = u_stage > 4.5;
   bool showOrg = (isOrg0 || isOrg5) && u_orgOpacity > 0.001;
 
-  if (showOrg) {
-    float rotY = u_t * 0.314; // ~20s period
+  float archiveGlitch = u_archiveMode;
+  vec2 orgUV = uv;
+  float gs = hash(vec2(floor(uv.y * 60.0), floor(u_t * 6.0)));
+  float glitchBand = step(0.92, gs) * archiveGlitch;
+  orgUV.x += (hash(vec2(uv.y, u_t)) - 0.5) * glitchBand * 0.04;
+  float splitAmt = archiveGlitch * 0.008;
+
+  if (showOrg || u_archiveMode > 0.001) {
+    float rotY = u_t * 0.314;
     float amp = isOrg5 ? 0.38 + 0.08 * sin(u_t * 0.4) : 0.35 + 0.08 * sin(u_t * 0.4);
     float scale = 0.6 + 0.03 * sin(u_t * 0.25);
-    if (isOrg5) rotY *= 0.5;
+    if (isOrg5 || u_archiveMode > 0.001) rotY *= 0.5;
+    vec3 coolPalette = vec3(0.4, 0.7, 1.0);
+    vec3 baseColor = mix(organismColor(isOrg5), coolPalette, u_archiveMode);
+    float orgVis = max(u_orgOpacity, u_archiveMode);
 
     for (float i = 0.0; i < N; i += 1.0) {
       float theta = i * GOLDEN;
@@ -607,11 +625,16 @@ void main() {
       pos *= scale;
       vec2 proj = pos.xy / (1.0 - pos.z * 0.3);
       proj.x /= u_res.x / u_res.y;
-      float d = length(ndc - proj);
-      col += organismColor(isOrg5) * 0.0006 * u_orgOpacity / (d * d + 0.0005);
+      vec2 projR = proj + vec2(splitAmt, 0.0);
+      vec2 projB = proj - vec2(splitAmt, 0.0);
+      float dR = length(ndc - projR);
+      float dG = length(ndc - proj);
+      float dB = length(ndc - projB);
+      float contrib = 0.0006 * orgVis;
+      col += vec3(baseColor.r * contrib / (dR * dR + 0.0005), baseColor.g * contrib / (dG * dG + 0.0005), baseColor.b * contrib / (dB * dB + 0.0005));
     }
-    float bokeh = hash(uv * 100.0 + u_t) * hash(uv * 77.0);
-    col += vec3(0.9, 0.85, 0.7) * 0.001 * step(0.98, bokeh) * u_orgOpacity;
+    float bokeh = hash(orgUV * 100.0 + u_t) * hash(orgUV * 77.0);
+    col += baseColor * 0.001 * step(0.98, bokeh) * orgVis;
   }
 
   if (u_stage >= 1.0 && u_stage < 2.0) {
@@ -690,6 +713,7 @@ void main() {
 
   float dist = length(uv - vec2(0.5));
   col *= clamp(1.0 - dist * 1.2, 0.0, 1.0);
+  if (u_archiveMode > 0.99) col = min(col, vec3(0.35));
   gl_FragColor = vec4(col, 1.0);
 }
 `;
@@ -719,6 +743,7 @@ const uStage = gl.getUniformLocation(prog, 'u_stage');
 const uBlend = gl.getUniformLocation(prog, 'u_blend');
 const uOrgOpacity = gl.getUniformLocation(prog, 'u_orgOpacity');
 const uOrgGhost = gl.getUniformLocation(prog, 'u_orgGhost');
+const uArchiveMode = gl.getUniformLocation(prog, 'u_archiveMode');
 const uVid1 = gl.getUniformLocation(prog, 'u_vid1');
 const uVid2 = gl.getUniformLocation(prog, 'u_vid2');
 const uVid3 = gl.getUniformLocation(prog, 'u_vid3');
@@ -736,28 +761,38 @@ const tex1 = createVideoTexture();
 const tex2 = createVideoTexture();
 const tex3 = createVideoTexture();
 
+function shuffleVideos() {
+  const arr = [...CONFIG.videos];
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+let currentVideoOrder = shuffleVideos();
 const vid1 = document.getElementById('vid1');
 const vid2 = document.getElementById('vid2');
 const vid3 = document.getElementById('vid3');
-vid1.src = CONFIG.media(CONFIG.videos.vid1.path);
-vid2.src = CONFIG.media(CONFIG.videos.vid2.path);
-vid3.src = CONFIG.media(CONFIG.videos.vid3.path);
+vid1.src = CONFIG.media(currentVideoOrder[0]);
+vid2.src = CONFIG.media(currentVideoOrder[1]);
+vid3.src = CONFIG.media(currentVideoOrder[2]);
 
 let videosReady = 0;
 function onVideoReady() {
   videosReady++;
   if (videosReady === 3) {
-    vid1.currentTime = CONFIG.videos.vid1.seek;
-    vid2.currentTime = CONFIG.videos.vid2.seek;
-    vid3.currentTime = CONFIG.videos.vid3.seek;
+    vid1.currentTime = CONFIG.videoSeek;
+    vid2.currentTime = CONFIG.videoSeek;
+    vid3.currentTime = CONFIG.videoSeek;
     vid1.play().catch(()=>{});
     vid2.play().catch(()=>{});
     vid3.play().catch(()=>{});
   }
 }
-vid1.addEventListener('canplaythrough', onVideoReady, { once: true });
-vid2.addEventListener('canplaythrough', onVideoReady, { once: true });
-vid3.addEventListener('canplaythrough', onVideoReady, { once: true });
+vid1.addEventListener('canplaythrough', onVideoReady);
+vid2.addEventListener('canplaythrough', onVideoReady);
+vid3.addEventListener('canplaythrough', onVideoReady);
 
 let startTime = Date.now();
 let lastLog = -1;
@@ -765,6 +800,8 @@ let glStage = 0.0, glStageTarget = 0.0;
 let glBlend = 0.0, glBlendTarget = 0.0;
 let glOrgOpacity = 1.0, glOrgOpacityTarget = 1.0;
 let glOrgGhost = 0.0;
+let glArchiveMode = 0.0, glArchiveModeTarget = 0.0;
+let manualOrgFade = false;
 
 function renderGL() {
   gl.bindFramebuffer(gl.FRAMEBUFFER, null);
@@ -776,7 +813,8 @@ function renderGL() {
   }
   glStage += (glStageTarget - glStage) * 0.002;
   glBlend += (glBlendTarget - glBlend) * 0.003;
-  glOrgOpacity += (glOrgOpacityTarget - glOrgOpacity) * 0.002;
+  if (!manualOrgFade) glOrgOpacity += (glOrgOpacityTarget - glOrgOpacity) * 0.002;
+  glArchiveMode += (glArchiveModeTarget - glArchiveMode) * 0.002;
 
   gl.uniform1f(uT, t);
   gl.uniform2f(uRes, glCanvas.width, glCanvas.height);
@@ -784,6 +822,7 @@ function renderGL() {
   gl.uniform1f(uBlend, glBlend);
   gl.uniform1f(uOrgOpacity, glOrgOpacity);
   gl.uniform1f(uOrgGhost, glOrgGhost);
+  gl.uniform1f(uArchiveMode, glArchiveMode);
 
   if (glStage >= 2.0) {
     if (glStage < 3.0 && vid1.readyState >= 2) {
@@ -822,7 +861,8 @@ const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 let currentGain = null;
 let currentBuffer = null;
 
-async function playTrack(path) {
+async function playTrack(path, opts) {
+  const fadeInTC = (opts && opts.fadeInTimeConstant) || 10.0;
   try {
     if (audioCtx.state === 'suspended') await audioCtx.resume();
     const res = await fetch(path);
@@ -838,11 +878,11 @@ async function playTrack(path) {
     src.start(0);
     if (currentGain) {
       currentGain.gain.setTargetAtTime(0, now, 10.0);
-      gain.gain.setTargetAtTime(0.75, now, 10.0);
+      gain.gain.setTargetAtTime(0.75, now, fadeInTC);
       const oldSrc = currentBuffer;
       setTimeout(() => { try { if (oldSrc) oldSrc.stop(); } catch(e){} }, 45000);
     } else {
-      gain.gain.setTargetAtTime(0.75, now, 10.0);
+      gain.gain.setTargetAtTime(0.75, now, fadeInTC);
     }
     currentGain = gain;
     currentBuffer = src;
@@ -905,17 +945,21 @@ document.addEventListener('mousemove', startVirta, { once: true });
 
 function pulseOrganism() {
   if (currentStage < 2 || currentStage > 4) return;
-  let t = 0;
-  const interval = setInterval(() => {
-    t += 0.05;
-    glOrgGhost = Math.sin(t * Math.PI) * 0.2;
-    if (t >= 1.0) {
+  const startTime = Date.now();
+  const pulseDuration = 12000;
+  function updatePulse() {
+    const elapsed = Date.now() - startTime;
+    const progress = elapsed / pulseDuration;
+    if (progress >= 1.0) {
       glOrgGhost = 0;
-      clearInterval(interval);
+      return;
     }
-  }, 50);
+    glOrgGhost = Math.sin(progress * Math.PI) * 0.12;
+    requestAnimationFrame(updatePulse);
+  }
+  updatePulse();
 }
-setInterval(pulseOrganism, 18000);
+setInterval(pulseOrganism, 25000);
 
 document.getElementById('sessionId').textContent =
   'DS-' + Math.random().toString(36).substring(2,7).toUpperCase();
@@ -967,35 +1011,36 @@ function runLogLines(callback) {
 }
 
 const ARCHIVE_TRACKS = [
-  { idx: '01', title: 'Signal Dreams', status: 'available now' },
-  { idx: '02', title: 'Feedback Memory', status: 'available now' },
-  { idx: '03', title: 'Nature Module', status: 'available now' },
-  { idx: '04', title: 'Brainwaves', status: 'available now' },
-  { idx: '05', title: 'The Dream Architect', status: 'available now' },
-  { idx: '06', title: 'Co-Dreaming', status: 'coming soon' },
-  { idx: '07', title: 'Free Will', status: 'coming soon' },
-  { idx: '08', title: 'Glitches Are Portals', status: 'coming soon' },
-  { idx: '09', title: 'The Dream Ends', status: 'coming soon' },
-  { idx: '10', title: 'Virta', status: 'coming soon' }
+  { idx: '01', title: 'Signal Dreams', status: 'available' },
+  { idx: '02', title: 'Feedback Memory', status: 'available' },
+  { idx: '03', title: 'Nature Module', status: 'available' },
+  { idx: '04', title: 'Brainwaves', status: 'available' },
+  { idx: '05', title: 'Module N5', status: 'available' },
+  { idx: '06', title: 'Co-Dreaming', status: 'soon' },
+  { idx: '07', title: 'Free Will', status: 'soon' },
+  { idx: '08', title: 'Glitches Are Portals', status: 'soon' },
+  { idx: '09', title: 'The Dream Ends', status: 'soon' },
+  { idx: '10', title: 'Virta', status: 'soon' }
 ];
 
-function showComingSoon() {
-  playTrack(CONFIG.media(CONFIG.music.stage4));
+function showArchiveOverlay() {
   fadeAudioOver60s();
   document.getElementById('progress').classList.remove('visible');
   currentStage = 6;
   document.getElementById('s6').classList.add('active');
   const list = document.getElementById('archiveList');
   list.innerHTML = '';
+  setTimeout(() => document.getElementById('archive-header').classList.add('visible'), 0);
   ARCHIVE_TRACKS.forEach((t, i) => {
     const el = document.createElement('div');
-    el.className = 'archive-line' + (t.status === 'available now' ? ' available' : ' coming-soon');
-    el.innerHTML = '<span class="idx">' + t.idx + '</span> — <span class="title">' + t.title + '</span> — <span class="status">' + t.status + '</span>';
+    el.className = 'archive-line' + (t.status === 'available' ? ' available' : ' soon');
+    el.innerHTML = '<span class="idx">' + t.idx + '</span> · <span class="title">' + t.title + '</span> · <span class="status">' + t.status + '</span>';
     list.appendChild(el);
-    setTimeout(() => el.classList.add('visible'), 600 * (i + 1));
+    setTimeout(() => el.classList.add('visible'), 1000 + 500 * i);
   });
-  setTimeout(() => document.getElementById('archiveTagline').classList.add('visible'), 600 * ARCHIVE_TRACKS.length + 2000);
-  setTimeout(() => document.getElementById('archiveByline').classList.add('visible'), 600 * ARCHIVE_TRACKS.length + 4000);
+  const lastTrackTime = 1000 + 500 * (ARCHIVE_TRACKS.length - 1);
+  setTimeout(() => document.getElementById('archiveTagline').classList.add('visible'), lastTrackTime + 3000);
+  setTimeout(() => document.getElementById('archiveByline').classList.add('visible'), lastTrackTime + 5000);
 }
 
 const FRAGS = [
@@ -1037,14 +1082,24 @@ function enterVideoStage(stageNum, onAdvance) {
 
 function onEnter() {
   if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
-  glOrgOpacityTarget = 0.0;
   document.getElementById('s0').classList.remove('active');
-  stageTimer = setTimeout(() => {
-    glStageTarget = 1.0;
+  glStageTarget = 1.0;
+  showStage(1);
+  document.getElementById('progress').classList.add('visible');
+  playTrack(CONFIG.media(CONFIG.music.stage1));
+  manualOrgFade = true;
+  const fadeStart = Date.now();
+  const fadeDuration = 8000;
+  function fadeOrganism() {
+    const elapsed = Date.now() - fadeStart;
+    const progress = Math.min(elapsed / fadeDuration, 1.0);
+    glOrgOpacity = 1.0 - progress;
     glOrgOpacityTarget = 0.0;
-    showStage(1);
-    document.getElementById('progress').classList.add('visible');
-    playTrack(CONFIG.media(CONFIG.music.stage1));
+    if (progress >= 1.0) manualOrgFade = false;
+    else requestAnimationFrame(fadeOrganism);
+  }
+  fadeOrganism();
+  stageTimer = setTimeout(() => {
     runLogLines(() => {
       const holdAfterLogs = CONFIG.timing.stage1Duration - LOG_LINES.length * CONFIG.logLinePause - 800;
       stageTimer = setTimeout(() => {
@@ -1086,15 +1141,14 @@ function onEnter() {
                     glStageTarget = 5.0;
                     glOrgOpacityTarget = 1.0;
                     showStage(5);
-                    playTrack(CONFIG.media(CONFIG.music.stage5));
+                    playTrack(CONFIG.media(CONFIG.music.stage4));
+                    setTimeout(() => {
+                      playTrack(CONFIG.media(CONFIG.music.stage5), { fadeInTimeConstant: 15.0 });
+                    }, 20000);
                     stageTimer = setTimeout(() => {
-                      document.getElementById('s5').querySelector('.end-msg').classList.add('show');
-                      stageTimer = setTimeout(() => {
-                        document.getElementById('s5').classList.remove('active');
-                        document.getElementById('s5').querySelector('.end-msg').classList.remove('show');
-                        showComingSoon();
-                      }, 4000);
-                    }, CONFIG.timing.stage5OrgDuration);
+                      glArchiveModeTarget = 1.0;
+                      showArchiveOverlay();
+                    }, 30000);
                   }, CONFIG.timing.transitionMs);
                 });
               }, CONFIG.timing.transitionMs);
@@ -1103,7 +1157,7 @@ function onEnter() {
         });
       }, holdAfterLogs);
     });
-  }, 1500);
+  }, 4000);
 }
 
 function resetExperience() {
@@ -1113,9 +1167,14 @@ function resetExperience() {
   document.getElementById('next-prompt').classList.remove('visible');
   stopAudio();
   virtaStarted = false;
-  vid1.pause(); vid1.currentTime = CONFIG.videos.vid1.seek;
-  vid2.pause(); vid2.currentTime = CONFIG.videos.vid2.seek;
-  vid3.pause(); vid3.currentTime = CONFIG.videos.vid3.seek;
+  videosReady = 0;
+  currentVideoOrder = shuffleVideos();
+  vid1.src = CONFIG.media(currentVideoOrder[0]);
+  vid2.src = CONFIG.media(currentVideoOrder[1]);
+  vid3.src = CONFIG.media(currentVideoOrder[2]);
+  vid1.pause(); vid1.currentTime = CONFIG.videoSeek;
+  vid2.pause(); vid2.currentTime = CONFIG.videoSeek;
+  vid3.pause(); vid3.currentTime = CONFIG.videoSeek;
   glStageTarget = 0.0;
   glStage = 0.0;
   glBlendTarget = 0.0;
@@ -1123,12 +1182,16 @@ function resetExperience() {
   glOrgOpacityTarget = 1.0;
   glOrgOpacity = 1.0;
   glOrgGhost = 0.0;
+  glArchiveMode = 0.0;
+  glArchiveModeTarget = 0.0;
+  manualOrgFade = false;
   document.getElementById('progress').classList.remove('visible');
   ['s1','s2','s3','s4','s5','s6'].forEach(id => document.getElementById(id).classList.remove('active'));
   document.getElementById('s0').classList.add('active');
   document.getElementById('logContainer').innerHTML = '';
   document.getElementById('s5').querySelector('.end-msg').classList.remove('show');
   document.getElementById('archiveList').innerHTML = '';
+  document.getElementById('archive-header').classList.remove('visible');
   document.getElementById('archiveTagline').classList.remove('visible');
   document.getElementById('archiveByline').classList.remove('visible');
   document.getElementById('sessionId').textContent =

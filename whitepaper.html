@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DreamScreens Neural Lab — Research Overview 2026</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400&family=IBM+Plex+Sans:ital,wght@0,300;0,400;1,300;1,400&display=swap');
+
+*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+
+:root {
+  --mono: 'IBM Plex Mono', monospace;
+  --sans: 'IBM Plex Sans', sans-serif;
+  --green: #00cc66;
+  --text: #1a1a18;
+  --muted: #666660;
+  --rule: #e0e0d8;
+  --bg: #fafaf7;
+}
+
+html { background: var(--bg); }
+body {
+  font-family: var(--sans);
+  font-size: 16px;
+  line-height: 1.75;
+  color: var(--text);
+  font-weight: 300;
+  -webkit-font-smoothing: antialiased;
+}
+
+.page {
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 12vh 2rem 16vh;
+}
+
+.header {
+  margin-bottom: 8vh;
+  padding-bottom: 3rem;
+  border-bottom: 1px solid var(--rule);
+}
+.doc-label {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.45em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 0.4rem;
+  opacity: 0.6;
+}
+.doc-ref {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.2em;
+  color: var(--muted);
+  opacity: 0.4;
+  margin-bottom: 2.5rem;
+}
+.header h1 {
+  font-family: var(--sans);
+  font-size: clamp(22px, 3.5vw, 34px);
+  font-weight: 400;
+  line-height: 1.15;
+  letter-spacing: -0.01em;
+  margin-bottom: 0.6rem;
+}
+.header .sub {
+  font-size: 15px;
+  color: var(--muted);
+  font-weight: 300;
+  margin-bottom: 2rem;
+}
+.header .authors {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  color: var(--muted);
+  opacity: 0.55;
+  line-height: 2;
+}
+
+.abstract {
+  background: #f2f2ee;
+  border-left: 2px solid var(--green);
+  padding: 1.5rem 1.8rem;
+  margin-bottom: 5rem;
+}
+.abstract-label {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.4em;
+  text-transform: uppercase;
+  color: var(--green);
+  margin-bottom: 0.8rem;
+  opacity: 0.8;
+}
+.abstract p {
+  font-size: 14px;
+  line-height: 1.7;
+  margin-bottom: 0;
+}
+
+section { margin-bottom: 4.5rem; }
+
+h2 {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.4em;
+  text-transform: uppercase;
+  color: var(--green);
+  margin-bottom: 1.4rem;
+}
+
+h3 {
+  font-family: var(--sans);
+  font-size: 17px;
+  font-weight: 400;
+  line-height: 1.3;
+  margin-bottom: 0.9rem;
+  margin-top: 2.2rem;
+}
+h3:first-child { margin-top: 0; }
+
+p { margin-bottom: 1.1rem; font-size: 15px; }
+p.lead { font-size: 17px; line-height: 1.7; font-weight: 300; margin-bottom: 1.8rem; }
+
+blockquote {
+  border-left: 1px solid var(--rule);
+  padding: 0.4rem 0 0.4rem 1.8rem;
+  margin: 2rem 0;
+}
+blockquote p {
+  font-style: italic;
+  font-size: 15px;
+  line-height: 1.65;
+  color: var(--muted);
+  margin-bottom: 0;
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1.8rem 0;
+  font-size: 13px;
+}
+.data-table th {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  color: var(--muted);
+  text-align: left;
+  padding: 0.6rem 1rem 0.6rem 0;
+  border-bottom: 1px solid var(--rule);
+  font-weight: 400;
+}
+.data-table td {
+  padding: 0.7rem 1rem 0.7rem 0;
+  border-bottom: 1px solid var(--rule);
+  vertical-align: top;
+  line-height: 1.55;
+}
+.data-table td:first-child {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--muted);
+  white-space: nowrap;
+  padding-right: 2rem;
+}
+
+.tracklist { margin: 1.8rem 0; border-top: 1px solid var(--rule); }
+.track {
+  display: flex;
+  align-items: baseline;
+  gap: 1.2rem;
+  padding: 0.8rem 0;
+  border-bottom: 1px solid var(--rule);
+}
+.track .num { font-family: var(--mono); font-size: 9px; color: var(--muted); opacity: 0.4; min-width: 20px; }
+.track .title { font-family: var(--sans); font-size: 13px; font-weight: 400; flex: 1; }
+.track .dur { font-family: var(--mono); font-size: 9px; color: var(--muted); opacity: 0.35; }
+.track .status { font-family: var(--mono); font-size: 9px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--green); opacity: 0.7; }
+.track .status.soon { color: var(--muted); opacity: 0.35; }
+
+.footnotes { margin-top: 5rem; padding-top: 2rem; border-top: 1px solid var(--rule); }
+.footnotes p { font-size: 11px; color: var(--muted); line-height: 1.7; margin-bottom: 0.5rem; opacity: 0.6; }
+
+hr { border: none; border-top: 1px solid var(--rule); margin: 4rem 0; }
+
+.doc-footer {
+  padding-top: 2.5rem;
+  border-top: 1px solid var(--rule);
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+}
+.doc-footer .left {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.18em;
+  color: var(--muted);
+  opacity: 0.4;
+  line-height: 2.1;
+}
+.doc-footer a.back {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--text);
+  text-decoration: none;
+  opacity: 0.3;
+  transition: opacity 0.2s;
+}
+.doc-footer a.back:hover { opacity: 0.8; }
+
+@media (max-width: 600px) {
+  .doc-footer { flex-direction: column; gap: 1.5rem; }
+}
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="header">
+    <div class="doc-label">DreamScreens Neural Lab</div>
+    <div class="doc-ref">Research Overview &nbsp;/&nbsp; DS-NL-2026-04 &nbsp;/&nbsp; Restricted circulation</div>
+    <h1>Neural Dream Embedding and Experiential Memory Retrieval</h1>
+    <div class="sub">Toward a publicly deployable architecture for REM-state reconstruction and immersive memory rendering</div>
+    <div class="authors">
+      G. Lamb, Principal Investigator &nbsp;&nbsp;/&nbsp;&nbsp; DreamScreens Neural Lab<br>
+      Submitted for internal review &nbsp;&nbsp;/&nbsp;&nbsp; April 2026
+    </div>
+  </div>
+
+  <div class="abstract">
+    <div class="abstract-label">Abstract</div>
+    <p>This document outlines the conceptual framework, technical architecture, and proposed deployment model for the DreamScreens Neural Embedding and Retrieval System (NERS). The system translates EEG-derived REM-state neural signatures into rendered audiovisual experiences through a generative diffusion pipeline. We describe the current prototype, the proposed archive structure for public-facing memory retrieval sessions, and the longer-term trajectory toward live, installation, and cinematic deployment. The work sits at the intersection of neuroscience, generative AI, and experiential design. Its implications extend beyond personal memory retrieval into questions of consent, data sovereignty, and the nature of subjective experience when mediated by machine reconstruction.</p>
+  </div>
+
+  <section>
+    <h2>1. Background and Motivation</h2>
+    <p class="lead">The capacity to reconstruct subjective visual experience from neural data has moved from speculative fiction into demonstrable research within the past three years.</p>
+    <p>The publication of DreamDiffusion (Bai et al., ECCV 2024) established that high-quality images can be generated directly from EEG signals without text intermediation. The system uses temporal masked signal modelling to pre-train an EEG encoder, with CLIP alignment providing cross-modal supervision between neural, textual, and visual embeddings. Results are imperfect by design: the reconstruction reflects what the brain encoded, not what the eye observed. Blurry at the edges. Soft around remembered faces. Precise on the shapes that carried weight.</p>
+    <p>This imperfection is not a limitation to be engineered away. It is the signal. The gap between the neural source and the rendered output is where the human leaks through. DreamScreens is built on this premise: that the reconstruction artifact is not noise but meaning.</p>
+
+    <h3>The liminal condition</h3>
+    <p>We are constructing the future that fiction imagined before the technology existed to build it. The communicator became the smartphone. HAL became the voice in the room. Each of these transitions passed through a period in which the fiction and the fact were indistinguishable. That is the period we are in now, with respect to neural rendering.</p>
+    <p>DreamScreens occupies that space deliberately. The system is simultaneously a functional research prototype and a proposal about what it means to render interiority as shareable experience.</p>
+  </section>
+
+  <section>
+    <h2>2. Current System Architecture</h2>
+
+    <h3>Neural acquisition layer</h3>
+    <p>EEG data is captured across 64 channels during supervised REM-adjacent states. The acquisition protocol follows a modified version of the SEED-V paradigm with additional temporal windowing to isolate visually-loaded segments. Raw signals are band-pass filtered between 0.5 and 45 Hz. Theta band activity (4 to 8 Hz) is weighted most heavily in the embedding phase, consistent with its known association with hippocampal memory encoding and creative imagery.</p>
+
+    <h3>Embedding and diffusion pipeline</h3>
+    <p>Processed EEG features are passed through a temporal transformer encoder, producing a 768-dimensional neural embedding per 2-second window. These embeddings are aligned with CLIP visual space via contrastive learning on a paired EEG-image corpus. At inference, the aligned embeddings condition a latent diffusion model to produce the visual reconstruction.</p>
+    <p>The current system operates at approximately 61% visual confidence on held-out test sets. This figure is intentional. Reconstruction at 100% fidelity would be retrieval. At 61%, it is remembering.</p>
+
+    <blockquote>
+      <p>"The subject does not watch the reconstruction. The reconstruction watches the subject back. The distinction is smaller than expected."</p>
+    </blockquote>
+
+    <h3>Experiential rendering layer</h3>
+    <p>The rendered output is delivered through a WebGL shader pipeline operating in real time within a standard browser environment. Source footage acquired during the neural scanning sessions is processed through fragment shaders implementing noise-field displacement, luma-threshold reveal, chromatic drift, and temporal frame blending. The visual result is not the original footage. It is footage as the system remembered it.</p>
+    <p>Audio is synthesised and retrieved in parallel, with extended crossfades operating on a 30-second time constant. The acoustic and visual layers are loosely coupled rather than tightly synchronised. Each modality finds its own temporal resolution.</p>
+
+    <table class="data-table">
+      <thead>
+        <tr><th>Parameter</th><th>Current value</th><th>Notes</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>EEG channels</td><td>64</td><td>Standard 10/20 layout with temporal extension</td></tr>
+        <tr><td>Embedding dimension</td><td>768</td><td>CLIP ViT-L/14 aligned</td></tr>
+        <tr><td>Visual confidence</td><td>61%</td><td>Intentional ceiling, not current limit</td></tr>
+        <tr><td>Render resolution</td><td>75% native</td><td>GPU upscaled, imperceptible at viewing distance</td></tr>
+        <tr><td>Audio crossfade</td><td>30 seconds</td><td>Time constant 10.0 via Web Audio API</td></tr>
+        <tr><td>Session identifier</td><td>Randomised per session</td><td>Format: DS-XXXXX</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section>
+    <h2>3. The Memory Archive</h2>
+    <p class="lead">The public-facing deployment model is structured as an archive of distinct retrieval sessions. Each session corresponds to a specific neural scan event and produces a unique immersive experience.</p>
+    <p>The archive is navigated through a browser interface. Each session runs for approximately four minutes. The visitor advances through the reconstruction manually, one memory at a time. This is not a passive viewing experience. The navigation structure mirrors the retrieval process: deliberate, sequential, irreversible in the moment of encounter.</p>
+    <p>Each archive in the sequence is an immersive journey through a subliminal narrative. The visitor does not watch a memory. They move through a reconstruction of one, with all the distortion and incompleteness that process entails. This is a new way to experience the concept of an album: ten sessions, ten states of mind, ten subliminal narratives navigated at the visitor's own pace.</p>
+
+    <h3>Archive index</h3>
+
+    <div class="tracklist">
+      <div class="track"><span class="num">01</span><span class="title">Signal Dreams</span><span class="dur">4 min 12 sec</span><span class="status">available</span></div>
+      <div class="track"><span class="num">02</span><span class="title">Feedback Memory</span><span class="dur">3 min 58 sec</span><span class="status">available</span></div>
+      <div class="track"><span class="num">03</span><span class="title">Nature Module</span><span class="dur">4 min 33 sec</span><span class="status">available</span></div>
+      <div class="track"><span class="num">04</span><span class="title">Brainwaves</span><span class="dur">3 min 47 sec</span><span class="status">available</span></div>
+      <div class="track"><span class="num">05</span><span class="title">Module N5</span><span class="dur">5 min 01 sec</span><span class="status">available</span></div>
+      <div class="track"><span class="num">06</span><span class="title">Co-Dreaming</span><span class="dur">4 min 20 sec</span><span class="status soon">in preparation</span></div>
+      <div class="track"><span class="num">07</span><span class="title">Free Will</span><span class="dur">3 min 55 sec</span><span class="status soon">in preparation</span></div>
+      <div class="track"><span class="num">08</span><span class="title">Glitches Are Portals</span><span class="dur">4 min 08 sec</span><span class="status soon">in preparation</span></div>
+      <div class="track"><span class="num">09</span><span class="title">The Dream Ends</span><span class="dur">4 min 44 sec</span><span class="status soon">in preparation</span></div>
+      <div class="track"><span class="num">10</span><span class="title">Virta</span><span class="dur">5 min 17 sec</span><span class="status soon">in preparation</span></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>4. Broader Implications</h2>
+
+    <h3>On consent and data sovereignty</h3>
+    <p>The reconstruction of subjective experience from neural data raises questions that the technology is currently outpacing. If a memory can be rendered as a shareable object, questions of ownership, consent, and retention become urgent. The DreamScreens system logs all sessions by default. Archive retention is indefinite. Subject notification protocols are under internal review.</p>
+    <p>These are not hypothetical concerns. They are embedded in the architecture of the system as it currently exists. The design decision to surface them within the experience itself, rather than bury them in terms of service, is deliberate.</p>
+
+    <h3>On the nature of the reconstruction</h3>
+    <p>A memory rendered at 61% fidelity is not a documentary record. It is an interpretation produced by a system that has learned, from a large corpus of human visual experience, what things tend to look like. The reconstruction is accurate in the statistical sense. It is not accurate in the experiential sense. The subject who views their own reconstructed memory may not recognise it. They may recognise it too well. Both responses have been observed.</p>
+
+    <blockquote>
+      <p>"What the machine remembers on your behalf is shaped by everything it has already seen. The question of whose memory it is becomes genuinely difficult."</p>
+    </blockquote>
+
+    <h3>On scale and deployment</h3>
+    <p>The current prototype runs in any modern browser without installation. Media assets are delivered via edge-distributed infrastructure with no egress constraints. The architecture scales to arbitrary audience size. A private session for one person and a public installation for thousands are technically identical. The difference is curatorial.</p>
+  </section>
+
+  <section>
+    <h2>5. Development Trajectory</h2>
+    <p>The current browser experience represents the first phase of a multi-format deployment. Subsequent phases are outlined below in order of intended development.</p>
+
+    <table class="data-table">
+      <thead>
+        <tr><th>Format</th><th>Description</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Web archive</td><td>Full ten-session archive publicly accessible. Each session a complete audiovisual retrieval experience lasting 4 to 5 minutes.</td></tr>
+        <tr><td>Live performance</td><td>Real-time generative rendering driven by live modular synthesis and expressive MIDI control. The performer as system operator within a projection environment.</td></tr>
+        <tr><td>Gallery installation</td><td>Site-specific deployment. Visitors enter individually. Duration open. Each session generates a unique reconstruction from the shared archive.</td></tr>
+        <tr><td>Full event</td><td>Multi-room immersive experience structured as the DreamScreens facility. Each room corresponds to one archive session. Architecture, sound, light, and interaction as a single composition.</td></tr>
+        <tr><td>Long-form narrative</td><td>The DreamScreens company as a fully realised fictional world extended into film or serial format. The corporate aesthetic as production design language.</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section>
+    <h2>6. Collaboration and Next Steps</h2>
+    <p class="lead">This document is prepared for early-stage creative and production discussion. The research is sufficiently developed for a working prototype to be demonstrated. The broader project is sufficiently open for the right collaborator to shape its trajectory.</p>
+    <p>We are looking for a partner who understands that the most interesting cultural objects right now refuse to sit still in a single category. The archive is not an album in the conventional sense. It is not a film. It is not an installation. It is a new way to experience the concept of an album, in which each session is an immersive journey through a subliminal narrative.</p>
+    <p>Conversations about production partnership, label interest, commission, co-development, or investment are all appropriate at this stage. The work is early enough that its shape remains available to the right influence.</p>
+    <p>To experience the current prototype before this conversation: return to the entry point and begin a reconstruction session.</p>
+  </section>
+
+  <hr>
+
+  <div class="footnotes">
+    <p>[1] Bai, Y. et al. (2024). DreamDiffusion: High-Quality EEG-to-Image Generation with Temporal Masked Signal Modeling and CLIP Alignment. ECCV 2024.</p>
+    <p>[2] SEED-V: A multimodal dataset for EEG-based emotion recognition. BCMI Lab, Shanghai Jiao Tong University.</p>
+    <p>[3] All session durations are approximate and vary with individual neural scan parameters.</p>
+    <p>[4] This document is prepared for restricted circulation. Contents are confidential to DreamScreens Neural Lab and invited collaborators.</p>
+  </div>
+
+  <div class="doc-footer">
+    <div class="left">
+      DreamScreens Neural Lab<br>
+      DS-NL-2026-04<br>
+      dreamscreens.io
+    </div>
+    <a class="back" href="index.html">return to experience</a>
+  </div>
+
+</div>
+</body>
+</html>
