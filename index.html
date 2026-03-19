@@ -538,9 +538,9 @@
   <a href="whitepaper.html" target="_blank" class="archive-whitepaper" id="archiveWhitepaper">read the concept document →</a>
 </div>
 
-<video id="vid1" style="display:none" loop muted playsinline crossorigin="anonymous"></video>
-<video id="vid2" style="display:none" loop muted playsinline crossorigin="anonymous"></video>
-<video id="vid3" style="display:none" loop muted playsinline crossorigin="anonymous"></video>
+<video id="vid1" style="display:none" loop muted playsinline preload="auto"></video>
+<video id="vid2" style="display:none" loop muted playsinline preload="auto"></video>
+<video id="vid3" style="display:none" loop muted playsinline preload="auto"></video>
 
 <script>
 // ════════════════════════════════════════
@@ -1144,6 +1144,7 @@ let videoStageFallbackTimer = null;
 
 function enterVideoStage(stageNum, onAdvance) {
   if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+  [vid1, vid2, vid3].forEach(v => { if (v.readyState >= 2) v.play().catch(()=>{}); });
   if (videoStageFallbackTimer) clearTimeout(videoStageFallbackTimer);
   const nextPrompt = document.getElementById('next-prompt');
   nextPrompt.classList.remove('visible');
