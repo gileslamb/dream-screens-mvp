@@ -459,6 +459,30 @@
     from { opacity: 0; transform: translateY(6px); }
     to { opacity: 1; transform: none; }
   }
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: none; }
+  }
+  .restart-archive {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.25);
+    background: none;
+    border: 1px solid rgba(255,255,255,0.12);
+    padding: 10px 20px;
+    cursor: pointer;
+    margin-top: 2.5rem;
+    display: inline-block;
+    transition: color 0.3s, border-color 0.3s;
+    opacity: 0;
+    animation: fadeUp 1s ease 4s forwards;
+  }
+  .restart-archive:hover {
+    color: rgba(255,255,255,0.6);
+    border-color: rgba(255,255,255,0.3);
+  }
 </style>
 <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
 </head>
@@ -537,6 +561,9 @@
   <div class="archive-tagline" id="archiveTagline">Each archive is an immersive journey through a subliminal narrative.</div>
   <div class="archive-byline" id="archiveByline">dreamscreens.io</div>
   <a href="whitepaper.html" target="_blank" class="archive-whitepaper" id="archiveWhitepaper">read the concept document →</a>
+  <button class="restart-archive" onclick="resetExperience()">
+    restart dream analysis ↺
+  </button>
 </div>
 
 <video id="vid1" style="display:none" crossorigin="anonymous" loop muted playsinline></video>
